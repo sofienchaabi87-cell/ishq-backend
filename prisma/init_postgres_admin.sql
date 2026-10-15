@@ -1,7 +1,7 @@
 -- =========================================================
--- ISHQ PARFUMS — SCRIPT D'INITIALISATION POSTGRESQL ADMIN
+-- ISHQ PARFUMS — SCRIPT D'INITIALISATION POSTGRESQL
 -- Ce script SQL crée la base de données, les types, les tables
--- et insère les comptes administrateurs avec le mot de passe "admin123".
+-- et insère les produits de démonstration.
 -- =========================================================
 
 -- 1. Extension UUID pour la génération automatique des identifiants
@@ -98,35 +98,8 @@ CREATE TABLE IF NOT EXISTS "contact_messages" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- 8. Insertion / Mise à jour des Comptes Administrateurs (Mot de passe haché: admin123)
-INSERT INTO "users" ("id", "email", "password_hash", "name", "role", "created_at", "updated_at")
-VALUES 
-(
-    'admin-ishq-uuid-001',
-    'admin@ishq-parfum.com',
-    '$2a$10$/Q4LZzB0CFfRZSQkyLfUb.DF6WrGhxafltuFZQE00twIBqfVgcOi.',
-    'Maison ISHQ Admin',
-    'ADMIN',
-    NOW(),
-    NOW()
-),
-(
-    'admin-ishq-uuid-002',
-    'admin@ishq.com',
-    '$2a$10$/Q4LZzB0CFfRZSQkyLfUb.DF6WrGhxafltuFZQE00twIBqfVgcOi.',
-    'Maison ISHQ Admin',
-    'ADMIN',
-    NOW(),
-    NOW()
-)
-ON CONFLICT ("email") DO UPDATE SET "password_hash" = EXCLUDED."password_hash";
-
--- 9. Mise à jour de sécurité globale pour tous les administrateurs vers admin123
-UPDATE "users" 
-SET "password_hash" = '$2a$10$/Q4LZzB0CFfRZSQkyLfUb.DF6WrGhxafltuFZQE00twIBqfVgcOi.'
-WHERE "role" = 'ADMIN';
-
--- 10. Insertion des Parfums par Défaut dans le Catalogue
+-- Admin creation is handled by prisma/seed.ts using ADMIN_EMAIL and ADMIN_PASSWORD.
+-- 8. Insertion des Parfums par Défaut dans le Catalogue
 INSERT INTO "products" ("id", "name", "subtitle", "price", "category", "category_label", "image", "description", "size", "notes", "rating", "badge", "stock")
 VALUES 
 ('ishq-signature', 'ISHQ Signature', 'Huile de Parfum Originelle', 89.00, 'signature', 'Signature', 'https://images.unsplash.com/photo-1547887537-6158d64c35b3?q=80&w=800', 'Une composition orientale moderne où le jasmin de Grasse rencontre l''ambre précieux.', '10 ml · Roll-on', '{"head": "Bergamote, Néroli", "heart": "Jasmin de Grasse", "base": "Ambre chaud, Oud"}'::jsonb, 5.0, 'Bestseller', 150),

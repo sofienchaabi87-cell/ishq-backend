@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { PrismaClient, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
@@ -6,24 +7,24 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Initialisation de la base de données ISHQ Parfums...");
 
-  // 1. Création des utilisateurs Administrateurs avec le mot de passe "admin123"
-  const hashedPassword = await bcrypt.hash("admin123", 10);
-  const adminEmails = ["admin@ishq-parfum.com", "admin@ishq.com"];
-
-  for (const email of adminEmails) {
-    await prisma.user.upsert({
-      where: { email },
-      update: { passwordHash: hashedPassword, role: Role.ADMIN },
-      create: {
-        email,
-        name: "Maison ISHQ Admin",
-        passwordHash: hashedPassword,
-        role: Role.ADMIN,
-      },
-    });
+  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminEmail || !adminPassword || adminPassword.length < 16) {
+    throw new Error("ADMIN_EMAIL and an ADMIN_PASSWORD of at least 16 characters are required to seed.");
   }
 
-  console.log(`👤 Comptes administrateurs prêts : ${adminEmails.join(", ")} (Mot de passe: admin123)`);
+  const hashedPassword = await bcrypt.hash(adminPassword, 10);
+  await prisma.user.upsert({
+    where: { email: adminEmail },
+    update: { passwordHash: hashedPassword, role: Role.ADMIN },
+    create: {
+      email: adminEmail,
+      name: "Maison ISHQ Admin",
+      passwordHash: hashedPassword,
+      role: Role.ADMIN,
+    },
+  });
+  console.log(`👤 Compte administrateur prêt : ${adminEmail}`);
 
   // 2. Création des produits initialisés depuis le catalogue ISHQ
   const perfumesData = [
