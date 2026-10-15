@@ -1,0 +1,116 @@
+// =========================================================
+// SCHÉMA DE BASE DE DONNÉES PRISMA (ISHQ PARFUMS)
+// Base de données: PostgreSQL
+// =========================================================
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  CUSTOMER
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum MessageStatus {
+  UNREAD
+  READ
+  ARCHIVED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String
+  role         Role     @default(CUSTOMER)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Product {
+  id            String      @id // ex: "ishq-signature"
+  name          String
+  subtitle      String
+  price         Decimal     @db.Decimal(10, 2)
+  originalPrice Decimal?    @map("original_price") @db.Decimal(10, 2)
+  category      String      // signature, fresh, intense, floral
+  categoryLabel String      @map("category_label")
+  image         String
+  description   String      @db.Text
+  size          String      @default("10 ml · Roll-on")
+  notes         Json        // { head: string, heart: string, base: string }
+  rating        Float       @default(5.0)
+  badge         String?
+  stock         Int         @default(100)
+  isActive      Boolean     @default(true) @map("is_active")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  orderItems    OrderItem[]
+
+  @@map("products")
+}
+
+model Order {
+  id            String      @id @default(uuid())
+  orderNumber   String      @unique @map("order_number")
+  customerName  String      @map("customer_name")
+  customerEmail String      @map("customer_email")
+  customerPhone String      @map("customer_phone")
+  customerCity  String      @map("customer_city")
+  cartTotal     Decimal     @map("cart_total") @db.Decimal(10, 2)
+  shippingCost  Decimal     @map("shipping_cost") @db.Decimal(10, 2)
+  grandTotal    Decimal     @map("grand_total") @db.Decimal(10, 2)
+  status        OrderStatus @default(PENDING)
+  trackingNumber String?    @map("tracking_number")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  items         OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String   @id @default(uuid())
+  orderId     String   @map("order_id")
+  productId   String   @map("product_id")
+  productName String   @map("product_name")
+  size        String
+  unitPrice   Decimal  @map("unit_price") @db.Decimal(10, 2)
+  quantity    Int
+  subtotal    Decimal  @db.Decimal(10, 2)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+model ContactMessage {
+  id        String        @id @default(uuid())
+  name      String
+  email     String
+  message   String        @db.Text
+  status    MessageStatus @default(UNREAD)
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  @@map("contact_messages")
+}
